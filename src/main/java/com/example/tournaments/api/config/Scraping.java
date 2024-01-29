@@ -2,8 +2,11 @@ package com.example.tournaments.api.config;
 
 
 import com.example.tournaments.api.players.PlayersRequestDTO;
+import com.example.tournaments.api.teams.Teams;
+import com.example.tournaments.api.teams.TeamsRequestDTO;
 import com.example.tournaments.api.tournaments.TournamentsRequestDTO;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
@@ -15,7 +18,7 @@ import java.util.List;
 @Component
 public class Scraping {
 
-    public List<String> listTournaments(){
+    public List<String> listTournaments() {
         List<String> listTournaments = new ArrayList<>();
         listTournaments.add("https://gol.gg/tournament/tournament-ranking/LCS%20Spring%202024/");
         listTournaments.add("https://gol.gg/tournament/tournament-ranking/CBLOL%20Split%201%202024/");
@@ -26,6 +29,61 @@ public class Scraping {
         listTournaments.add("https://gol.gg/tournament/tournament-ranking/VCS%20Spring%202024/");
         listTournaments.add("https://gol.gg/tournament/tournament-ranking/LLA%20Opening%202024/");
         return listTournaments;
+    }
+
+    public List<TeamsRequestDTO> scrapingTeamsData(String url) {
+//        String url = "https://gol.gg/teams/team-stats/2416/split-ALL/tournament-NACL%20Spring%202024/";
+        List<TeamsRequestDTO> listTeamsData = new ArrayList<TeamsRequestDTO>();
+        List<String> list = new ArrayList<String>();
+        try {
+            var doc = Jsoup
+                    .connect(url)
+                    .data("query", "Java")
+                    .userAgent("Mozilla")
+                    .cookie("auth", "token")
+                    .timeout(3000)
+                    .post();
+
+            var bodyTable = doc.selectXpath("/html/body/div/main/div[2]/div/div[3]/div/div[1]/div[1]/table/tbody/tr");
+
+            var textTag = doc
+                    .selectXpath("/html/body/div/main/div[2]/div/div[3]/div/div[2]/div[2]/table/tbody/tr/td/table/tbody/tr[2]/td[1]");
+
+            var camp = doc.selectXpath("/html/body/div/main/div[2]/div/div[1]/div/div/div[2]/div/span[2]/select/option[2]").text().split(" ");
+
+            var iconUrl = doc.selectXpath("/html/body/div/main/div[2]/div/div[3]/div/div[1]/div[2]/div/figure/img").attr("src").substring(2);
+
+            var title = doc.getElementsByTag("title").text().toLowerCase();
+            var tag = textTag.text().split(" ");
+
+            for (Element element : bodyTable) {
+                list.add(element.selectXpath("td[2]").text());
+            }
+
+            var name = doc.getElementsByTag("h1").text();
+            var finalIconUrl = "http://gol.gg" + iconUrl;
+            var region = list.getFirst();
+            var season = list.get(1);
+            var winsLoses = list.get(2).split(" ");
+            var wins = Integer.parseInt(winsLoses[0].replace("W", ""));
+            var loses = Integer.parseInt(winsLoses[2].replace("L", ""));
+            var winPercent = Double.parseDouble(list.get(3).replace("%", ""));
+            var gameDuration = Double.parseDouble(list.get(4).replace(":", "."));
+
+            String split = title.contains("spring") || title.contains("split 1")
+                    ? "SPRING"
+                    : title.contains("summer") || title.contains("split 2")
+                    ? "SUMMER"
+                    : "ALL";
+
+            String finalTag = (tag[0] + season + split);
+
+            listTeamsData.add(new TeamsRequestDTO(camp[0], finalTag, tag[0], name, region, wins, loses, winPercent, gameDuration, finalIconUrl ));
+
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        return listTeamsData;
     }
 
     public List<TournamentsRequestDTO> scrapingTournamentsData(String url) {
@@ -146,5 +204,9 @@ public class Scraping {
             System.out.println(e.getMessage());
         }
         return listPlayers;
+    }
+
+    public Document connectUrl(String url) {
+        return null;
     }
 }
