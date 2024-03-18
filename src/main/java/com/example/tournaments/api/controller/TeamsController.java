@@ -1,5 +1,6 @@
 package com.example.tournaments.api.controller;
 
+import com.example.tournaments.api.teams.Teams;
 import com.example.tournaments.api.teams.TeamsRepository;
 import com.example.tournaments.api.teams.TeamsResponseDTO;
 import com.example.tournaments.api.tournaments.TournamentsRepository;
@@ -27,5 +28,11 @@ public class TeamsController {
     public ResponseEntity<List<TeamsResponseDTO>> findTournamentTeams(@PathVariable String tournamentId){
         List<TeamsResponseDTO> teams = teamsRepository.findByCamp(tournamentId.toUpperCase()).stream().map(TeamsResponseDTO::new).toList();
         return ResponseEntity.ok(teams);
+    }
+
+    @GetMapping("/{tournamentId}/{teamTag}")
+    public ResponseEntity<TeamsResponseDTO> findTeam(@PathVariable String tournamentId, @PathVariable String teamTag){
+        var team = teamsRepository.findByCampAndTag(tournamentId.toUpperCase(), teamTag.toUpperCase());
+        return ResponseEntity.ok(new TeamsResponseDTO(team));
     }
 }
